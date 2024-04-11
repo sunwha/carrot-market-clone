@@ -10,7 +10,7 @@ export const FormInput = ({ type, placeholder, required, errors }: FormInputProp
     <div className="flex flex-col gap-2">
       <input
         type={type}
-        className="peer h-10 w-full rounded-md border-none bg-transparent px-3 ring-1 ring-neutral-200 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="peer h-10 w-full rounded-md border-none bg-transparent px-3 ring-1 ring-neutral-200 transition placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
         placeholder={placeholder}
         required={required}
       />
