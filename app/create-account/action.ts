@@ -1,7 +1,10 @@
-"use server"
 import db from "@/src/shared/lib/db"
+import getSession from "@/src/shared/lib/session"
+import bcrypt from "bcrypt"
+import { redirect } from "next/navigation"
 import { z } from "zod"
 import { PASSWORD_MIN_LENGTH, PASSWORD_REGEX } from "../../src/shared/lib/constants"
+;("use server")
 
 const checkPassword = ({
   password,
@@ -13,6 +16,30 @@ const checkPassword = ({
 
 const passwordRegex = PASSWORD_REGEX
 
+const checkUserName = async (username: string) => {
+  const user = await db.user.findUnique({
+    where: {
+      username
+    },
+    select: {
+      id: true
+    }
+  })
+  return !Boolean(user)
+}
+
+const checkUserEmail = async (email: string) => {
+  const user = await db.user.findUnique({
+    where: {
+      email
+    },
+    select: {
+      id: true
+    }
+  })
+  return !Boolean(user)
+}
+
 const formSchema = z
   .object({
     username: z
@@ -21,8 +48,14 @@ const formSchema = z
       .max(10, "너무 길어요")
       .toLowerCase()
       .trim()
-      .transform((value) => value.replace(/\s+/g, " ")),
-    email: z.string().email().toLowerCase().trim(),
+      .transform((value) => value.replace(/\s+/g, " "))
+      .refine(checkUserName, "이미 사용 중인 이름이에요"),
+    email: z
+      .string()
+      .email()
+      .toLowerCase()
+      .trim()
+      .refine(checkUserEmail, "이미 사용 중인 이메일이에요"),
     password: z
       .string()
       .min(PASSWORD_MIN_LENGTH, "너무 짧아요")
@@ -39,24 +72,32 @@ export async function createAccount(prevState: any, formData: FormData) {
     confirm_password: formData.get("user_password_confirm")
   }
 
-  const result = formSchema.safeParse(data)
+  const result = await formSchema.safeParseAsync(data)
   if (!result.success) {
     return result.error.flatten()
   } else {
-    const user = await db.user.findUnique({
-      where: {
-        username: result.data.username
+    // hash the password
+    const hashedPassword = await bcrypt.hash(result.data.password, 12)
+
+    // save the user to the database
+    const user = await db.user.create({
+      data: {
+        username: result.data.username,
+        email: result.data.email,
+        password: hashedPassword
       },
       select: {
         id: true
       }
     })
-    console.log(user)
-    // check if username is taken
-    // check if the email is already in use
-    // hash the password
-    // save the user to the database
+
     // log the user in
+    const cookies = await getSession()
+    //@ts-ignore
+    cookies.id = user.id
+    await cookies.save()
+
     // redirect to the home
+    redirect("/profile")
   }
 }

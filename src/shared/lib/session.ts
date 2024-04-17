@@ -7,7 +7,7 @@ interface SessionContent {
 
 export default function getSession() {
   return getIronSession<SessionContent>(cookies(), {
-    cookieName: "delicious-karrot",
+    cookieName: "carrot-clone",
     password: process.env.COOKIE_PASSWORD!
   })
 }
