@@ -1,18 +1,15 @@
-"use client"
-import { ButtonHTMLAttributes } from "react"
-import { useFormStatus } from "react-dom"
+import Link, { LinkProps } from "next/link"
+import { HTMLProps } from "react"
 
-interface ButtonProps {
+interface LinkedProps {
   styleType?: "full" | "text"
 }
 
-export const Button = ({
+export const LinkedButton = ({
   styleType,
   children,
-  className,
   ...rest
-}: ButtonProps & ButtonHTMLAttributes<HTMLButtonElement>) => {
-  const { pending } = useFormStatus()
+}: LinkedProps & LinkProps & HTMLProps<HTMLAnchorElement>) => {
   const style =
     styleType === "full"
       ? "transition-color block h-10 w-full rounded-lg border-white bg-orange-500 text-center font-bold leading-10 hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-neutral-400 disabled:text-neutral-300"
@@ -20,8 +17,8 @@ export const Button = ({
         ? "border-b font-bold"
         : ""
   return (
-    <button {...rest} className={`${style} ${className}`} disabled={pending}>
-      {pending ? "Loading..." : children}
-    </button>
+    <Link {...rest} className={`${style} ${rest.className}`}>
+      {children}
+    </Link>
   )
 }
