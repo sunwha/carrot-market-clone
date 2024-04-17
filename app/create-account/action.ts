@@ -16,30 +16,6 @@ const checkPassword = ({
 
 const passwordRegex = PASSWORD_REGEX
 
-const checkUserName = async (username: string) => {
-  const user = await db.user.findUnique({
-    where: {
-      username
-    },
-    select: {
-      id: true
-    }
-  })
-  return !Boolean(user)
-}
-
-const checkUserEmail = async (email: string) => {
-  const user = await db.user.findUnique({
-    where: {
-      email
-    },
-    select: {
-      id: true
-    }
-  })
-  return !Boolean(user)
-}
-
 const formSchema = z
   .object({
     username: z
@@ -48,19 +24,51 @@ const formSchema = z
       .max(10, "너무 길어요")
       .toLowerCase()
       .trim()
-      .transform((value) => value.replace(/\s+/g, " "))
-      .refine(checkUserName, "이미 사용 중인 이름이에요"),
-    email: z
-      .string()
-      .email()
-      .toLowerCase()
-      .trim()
-      .refine(checkUserEmail, "이미 사용 중인 이메일이에요"),
+      .transform((value) => value.replace(/\s+/g, " ")),
+    email: z.string().email().toLowerCase().trim(),
     password: z
       .string()
       .min(PASSWORD_MIN_LENGTH, "너무 짧아요")
       .regex(passwordRegex, "비밀번호가 너무 쉬워요"),
     confirm_password: z.string().min(6, "너무 짧아요")
+  })
+  .superRefine(async ({ username }, ctx) => {
+    const user = await db.user.findUnique({
+      where: {
+        username
+      },
+      select: {
+        id: true
+      }
+    })
+    if (user) {
+      ctx.addIssue({
+        code: "custom",
+        message: "이미 사용 중인 이름이에요",
+        path: ["username"],
+        fatal: true
+      })
+      return z.NEVER
+    }
+  })
+  .superRefine(async ({ email }, ctx) => {
+    const user = await db.user.findUnique({
+      where: {
+        email
+      },
+      select: {
+        id: true
+      }
+    })
+    if (user) {
+      ctx.addIssue({
+        code: "custom",
+        message: "이미 사용 중인 이메일이에요",
+        path: ["email"],
+        fatal: true
+      })
+      return z.NEVER
+    }
   })
   .refine(checkPassword, { message: "비밀번호가 일치하지 않아요", path: ["confirm_password"] })
 
@@ -74,6 +82,7 @@ export async function createAccount(prevState: any, formData: FormData) {
 
   const result = await formSchema.safeParseAsync(data)
   if (!result.success) {
+    console.log(result.error.flatten())
     return result.error.flatten()
   } else {
     // hash the password
