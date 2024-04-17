@@ -1,10 +1,10 @@
+"use server"
 import db from "@/src/shared/lib/db"
 import getSession from "@/src/shared/lib/session"
 import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { PASSWORD_MIN_LENGTH, PASSWORD_REGEX } from "../../src/shared/lib/constants"
-;("use server")
 
 const checkPassword = ({
   password,
